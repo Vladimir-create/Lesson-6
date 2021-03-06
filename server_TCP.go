@@ -6,16 +6,13 @@ import (
 	"encoding/json"
 )
 
-type Data struct {
-	N string
-	Ch chan int
-}
 type (
 	Action struct {
 		Action string `json:"action"`
 		ObjName string `json:"object"`
 	}
 	Teacher struct {
+		Ch chan int
 		ID string  `json:"id"`
 		Salary float64 `json:"salary"`
 		Subject string `json:"subject"`
@@ -39,10 +36,7 @@ type (
 		Process()
 	}
 	GeneralObject interface {
-		GetCreateAction() DefinedAction
-		GetUpdateAction() DefinedAction
 		GetReadAction() DefinedAction
-		GetDeleteAction() DefinedAction
 		Read(str string)bool
 		Print()
 	}
@@ -86,6 +80,7 @@ func (action *ReadTeacher) GetFromJSON (rawData []byte) {
 	}
 }
 	
+var teacher Teacher 
 func main() {
 	l, err := net.Listen("tcp", "127.0.0.1:12667")
 	if err != nil {
@@ -93,8 +88,8 @@ func main() {
 	}
 	defer l.Close()
 
-	dat.Ch = make(chan int, 1)
-	dat.Ch <- 1
+	teacher.Ch = make(chan int, 1)
+	teacher.Ch <- 1
 
 	for {
 		conn, err := l.Accept()
@@ -106,8 +101,9 @@ func main() {
 		go HandleConnection(conn)
 	}
 }
-var dat Data
+
 var arriPerson []GeneralObject
+
 func HandleConnection(conn net.Conn) {
 	buf := make([]byte, 2000)
 	n, err := conn.Read(buf)
@@ -115,12 +111,12 @@ func HandleConnection(conn net.Conn) {
 		conn.Close()
 		return
 	}
-
-	<- dat.Ch
-	
 	var act Action
 	var obj GeneralObject
 	var toDo DefinedAction
+	
+	<- teacher.Ch
+	
 	err = json.Unmarshal(buf[:n], &act)
 	if err != nil {
 		fmt.Println("error")
@@ -135,16 +131,13 @@ func HandleConnection(conn net.Conn) {
 	}
 	toDo.GetFromJSON(buf[:n])
 	toDo.Process()
-	fmt.Println(string(buf[:n]))
-	dat.N = string(buf[:n])
+	//fmt.Println(string(buf[:n]))
+	//dat.N = string(buf[:n])
 
 	data := []byte("Connection great")
 	conn.Write(data)
 
-	dat.Ch <- 1
+	teacher.Ch <- 1
 
 	conn.Close()
 }
-
-
-
