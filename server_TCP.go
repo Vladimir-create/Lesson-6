@@ -3,7 +3,7 @@ package main
 import (
 	"net"
 	"fmt"
-	"io"
+	//"io"
 	"encoding/json"
 )
 
@@ -175,7 +175,7 @@ func PrintAll(arriPerson []GeneralObject){
 
 var teachermutex Teachermutex
 func main() {
-	l, err := net.Listen("tcp", "127.0.0.1:12668")
+	l, err := net.Listen("tcp", "127.0.0.1:12669")
 	if err != nil {
 		panic(err)
 	}
@@ -193,18 +193,21 @@ func main() {
 var arriPerson []GeneralObject
 
 func HandleConnection(conn net.Conn) {
+	fmt.Println("dd")
 	buf := make([]byte, 0, 10000) 
-    smallBuf := make([]byte, 256)    
+    smallBuf := make([]byte, 256)   
+      
     for {
-        n, err := conn.Read(smallBuf)
-        if err != nil {
-            if err != io.EOF {
-                fmt.Println(err)
-            }
+		fmt.Println(buf)
+        n,_ := conn.Read(smallBuf)
+        if n<256 {
+			fmt.Println("eggddfgffgg")
+			buf = append(buf, smallBuf[:n]...)
             break
         }
         buf = append(buf, smallBuf[:n]...)
     }
+    fmt.Println("dff")
 	var act Action
 	var obj GeneralObject
 	var toDo DefinedAction
