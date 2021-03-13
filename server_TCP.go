@@ -13,6 +13,7 @@ type (
 		ObjName string `json:"object"`
 	}
 	Teacher struct {
+		localMutex chan int
 		ID string  `json:"id"`
 		Salary float64 `json:"salary"`
 		Subject string `json:"subject"`
@@ -38,6 +39,7 @@ type (
 		} `json:"data"`
 	}
 	ReadTeacher struct {
+		T Teacher
 		Data struct {
 			ID string `json:"id"`
 		} `json:"data"`
@@ -76,16 +78,15 @@ func (action ReadTeacher) Process() {
 	fmt.Println("Read teacher", action.Data.ID)
 	for i:=0;i<len(arriPerson);i++{
 		if arriPerson[i].Read(action.Data.ID) {
-			<- teachermutex.Ch
+			<- action.T.localMutex 
 			arriPerson[i].Print()
 		}
 	}
-	teachermutex.Ch <- 1
+	action.T.localMutex  <- 1
 }
 
 func (action CreateTeacher) Process(){
-	teachermutex.Ch = make(chan int, 1)
-	teachermutex.Ch <- 1
+	action.T.localMutex <- 1 
 	fmt.Println("Create Teacher")
 	arriPerson = append(arriPerson, &action.T)
 	PrintAll(arriPerson)
@@ -95,12 +96,12 @@ func (action UpdateTeacher) Process() {
 	fmt.Println("Update Teachers")
 	for i:=0;i<len(arriPerson);i++{	
 		if arriPerson[i].Read(action.T.ID) {
-			<- teachermutex.Ch
+			<- action.T.localMutex
 			arriPerson[i] = &action.T
 		}
 	}
 	PrintAll(arriPerson)
-	teachermutex.Ch <- 1
+	action.T.localMutex <- 1
 }
 
 func (action DeleteTeacher) Process() {
