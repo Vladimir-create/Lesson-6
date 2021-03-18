@@ -86,10 +86,12 @@ func (action ReadTeacher) Process() {
 }
 
 func (action CreateTeacher) Process(){
+		fmt.Println("proceess")
 	action.T.localMutex <- 1 
 	fmt.Println("Create Teacher")
 	arriPerson = append(arriPerson, &action.T)
 	PrintAll(arriPerson)
+	fmt.Println("proceess2")
 }
 
 func (action UpdateTeacher) Process() {
@@ -160,11 +162,13 @@ func (action *UpdateTeacher) GetFromJSON (rawData []byte) {
 }
 
 func (action *CreateTeacher) GetFromJSON (rawData []byte) {
+		fmt.Println("getfrjson")
 	err := json.Unmarshal(rawData, action)
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
+		fmt.Println("getfrjson2")
 }
 	
 func PrintAll(arriPerson []GeneralObject){
@@ -175,7 +179,7 @@ func PrintAll(arriPerson []GeneralObject){
 
 var teachermutex Teachermutex
 func main() {
-	l, err := net.Listen("tcp", "127.0.0.1:12669")
+	l, err := net.Listen("tcp", "127.0.0.1:12668")
 	if err != nil {
 		panic(err)
 	}
@@ -193,25 +197,24 @@ func main() {
 var arriPerson []GeneralObject
 
 func HandleConnection(conn net.Conn) {
-	fmt.Println("dd")
 	buf := make([]byte, 0, 10000) 
     smallBuf := make([]byte, 256)   
       
     for {
-		fmt.Println(buf)
         n,_ := conn.Read(smallBuf)
         if n<256 {
-			fmt.Println("eggddfgffgg")
 			buf = append(buf, smallBuf[:n]...)
             break
         }
         buf = append(buf, smallBuf[:n]...)
     }
-    fmt.Println("dff")
+    fmt.Println(string(buf))
 	var act Action
 	var obj GeneralObject
 	var toDo DefinedAction
-	err := json.Unmarshal(buf[:len(buf)], &act)
+	fmt.Println(string(buf[:len(buf)]))
+	err := json.Unmarshal(buf, &act)
+	fmt.Println(act)
 	if err != nil {
 		fmt.Println("error")
 	}
@@ -221,7 +224,9 @@ func HandleConnection(conn net.Conn) {
 	}
 	switch act.Action {
 		case "create":
+			fmt.Println("create")
 			toDo = obj.GetCreateAction()
+			fmt.Println("create2")
 		case "update":
 			toDo = obj.GetUpdateAction()
 		case "read":
@@ -229,7 +234,8 @@ func HandleConnection(conn net.Conn) {
 		case "delete":
 			toDo = obj.GetDeleteAction()
 	}
-	toDo.GetFromJSON(buf[:len(buf)])
+	fmt.Println()
+	toDo.GetFromJSON(buf)
 	toDo.Process()
 	data := []byte("Connection great")
 	conn.Write(data)
